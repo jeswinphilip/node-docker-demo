@@ -24,11 +24,21 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
+    - name: Debug - Show repository info
+      run: |
+        echo "Repository: ${{ github.repository }}"
+        echo "Event name: ${{ github.event_name }}"
+        echo "Branch: ${{ github.ref_name }}"
+
+    - name: Debug - Check secrets
+      run: |
+        echo "Username secret exists: ${{ secrets.DOCKER_HUB_USERNAME != '' }}"
+        echo "Token secret exists: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN != '' }}"
+
     - name: Log in to Docker Hub
       if: github.event_name != 'pull_request'
       uses: docker/login-action@v3
       with:
-        registry: ${{ env.REGISTRY }}
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
@@ -48,12 +58,15 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        platforms: linux/amd64,linux/arm64
+        platforms: linux/amd64
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-    - name: Image digest
-      run: echo ${{ steps.meta.outputs.tags }}
+    - name: Success message
+      run: |
+        echo "✅ Docker image built and pushed successfully!"
+        echo "Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+        echo "Tags: ${{ steps.meta.outputs.tags }}"
